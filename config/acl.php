@@ -16,6 +16,7 @@ return [
         'medical_experiences',
         'roles',
         'settings',
+        'case_templates',
     ],
 
     /*

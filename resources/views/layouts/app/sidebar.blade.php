@@ -27,9 +27,16 @@
                     <flux:sidebar.item icon="shield-check" :href="route('admin.roles.index')" :current="request()->routeIs('admin.roles.*')" wire:navigate>
                         {{ __('Roles') }}
                     </flux:sidebar.item>
-                    <flux:sidebar.item icon="cog-6-tooth" :href="route('admin.settings.index')" :current="request()->routeIs('admin.settings.*')" wire:navigate>
-                        {{ __('Settings') }}
-                    </flux:sidebar.item>
+                    @can('case_templates list')
+                        <flux:sidebar.item icon="document-text" :href="route('admin.case-templates.index')" :current="request()->routeIs('admin.case-templates.*')" wire:navigate>
+                            {{ __('Case Templates') }}
+                        </flux:sidebar.item>
+                    @endcan
+                    @can('settings list')
+                        <flux:sidebar.item icon="cog-6-tooth" :href="route('admin.settings.index')" :current="request()->routeIs('admin.settings.*')" wire:navigate>
+                            {{ __('Settings') }}
+                        </flux:sidebar.item>
+                    @endcan
                 </flux:sidebar.group>
             </flux:sidebar.nav>
 
