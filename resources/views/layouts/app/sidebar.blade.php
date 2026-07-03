@@ -21,6 +21,12 @@
                     <flux:sidebar.item icon="academic-cap" :href="route('admin.medical-experiences.index')" :current="request()->routeIs('admin.medical-experiences.*')" wire:navigate>
                         {{ __('Medical Experiences') }}
                     </flux:sidebar.item>
+                    <flux:sidebar.item icon="clipboard-document-list" :href="route('admin.diagnoses.index')" :current="request()->routeIs('admin.diagnoses.*')" wire:navigate>
+                        {{ __('Diagnoses') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="shield-check" :href="route('admin.roles.index')" :current="request()->routeIs('admin.roles.*')" wire:navigate>
+                        {{ __('Roles') }}
+                    </flux:sidebar.item>
                 </flux:sidebar.group>
             </flux:sidebar.nav>
 

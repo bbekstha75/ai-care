@@ -9,12 +9,12 @@
             <flux:input
                 wire:model="name"
                 :label="__('Name')"
-                :placeholder="__('e.g. General Practitioner')"
+                :placeholder="__('Enter medical experience name')"
                 required
             />
 
             <flux:input
-                wire:model="sort_order"
+                wire:model="sortOrder"
                 :label="__('Sort Order')"
                 type="number"
                 min="0"
@@ -26,8 +26,9 @@
                 <flux:button variant="ghost" wire:click="$set('showModal', false)">
                     {{ __('Cancel') }}
                 </flux:button>
-                <flux:button variant="primary" type="submit">
-                    {{ __('Save') }}
+                <flux:button variant="primary" type="submit" wire:loading.attr="disabled">
+                    <span wire:loading.remove wire:target="save">{{ __('Save') }}</span>
+                    <span wire:loading wire:target="save">{{ __('Saving...') }}</span>
                 </flux:button>
             </div>
         </form>

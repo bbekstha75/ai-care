@@ -2,13 +2,14 @@
 
 namespace App\Livewire\Admin\MedicalExperiences;
 
+use App\Livewire\Concerns\HasDeleteConfirmation;
+use App\Livewire\Concerns\HasSearch;
 use App\Models\MedicalExperience;
 use Flux\Flux;
 use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
-use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -16,39 +17,29 @@ use Livewire\WithPagination;
 #[Layout('layouts.app')]
 class Index extends Component
 {
-    use WithPagination;
-
-    #[Url]
-    public string $search = '';
-
-    public ?string $deleteId = null;
-
-    public function updatedSearch(): void
-    {
-        $this->resetPage();
-    }
-
-    public function confirmDelete(string $id): void
-    {
-        $this->deleteId = $id;
-    }
+    use HasDeleteConfirmation, HasSearch, WithPagination;
 
     public function delete(): void
     {
-        if ($this->deleteId) {
-            $medicalExperience = MedicalExperience::findOrFail($this->deleteId);
-            $medicalExperience->delete();
+        $this->authorize('medical_experiences delete');
+
+        $medicalExperience = MedicalExperience::find($this->deleteId);
+
+        if (! $medicalExperience) {
+            Flux::toast(text: __('Medical experience not found.'), variant: 'danger');
             $this->deleteId = null;
 
-            Flux::toast(variant: 'success', text: __('Medical experience deleted successfully.'));
+            return;
         }
+
+        $medicalExperience->delete();
+        $this->deleteId = null;
+
+        Flux::toast(text: __('Medical experience deleted successfully.'), variant: 'success');
     }
 
     #[On('medical-experience-saved')]
-    public function refreshList(): void
-    {
-        // This empty method simply triggers a re-render
-    }
+    public function refreshList(): void {}
 
     public function render(): View
     {

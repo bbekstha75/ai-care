@@ -3,7 +3,6 @@
 use App\Livewire\Admin\MedicalExperiences\Index;
 use App\Livewire\Admin\MedicalExperiences\MedicalExperienceForm;
 use App\Models\MedicalExperience;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 
@@ -16,26 +15,33 @@ test('guests are redirected from medical experiences index', function () {
         ->assertRedirect(route('login'));
 });
 
+test('non-admin users cannot access medical experiences index', function () {
+    asUser();
+
+    $this->get(route('admin.medical-experiences.index'))
+        ->assertForbidden();
+});
+
 // --- Index ---
 
-test('authenticated users can view medical experiences index', function () {
-    $this->actingAs(User::factory()->create());
+test('authenticated admins can view medical experiences index', function () {
+    asAdmin();
 
     $this->get(route('admin.medical-experiences.index'))
         ->assertOk();
 });
 
 test('index displays medical experiences', function () {
-    $this->actingAs(User::factory()->create());
+    asAdmin();
 
-    $experience = MedicalExperience::factory()->create(['name' => 'Cardiology']);
+    MedicalExperience::factory()->create(['name' => 'Cardiology']);
 
     Livewire::test(Index::class)
         ->assertSee('Cardiology');
 });
 
 test('index supports search filtering', function () {
-    $this->actingAs(User::factory()->create());
+    asAdmin();
 
     MedicalExperience::factory()->create(['name' => 'Cardiology']);
     MedicalExperience::factory()->create(['name' => 'Dermatology']);
@@ -47,7 +53,7 @@ test('index supports search filtering', function () {
 });
 
 test('index paginates results', function () {
-    $this->actingAs(User::factory()->create());
+    asAdmin();
 
     MedicalExperience::factory()->count(15)->create();
 
@@ -57,13 +63,13 @@ test('index paginates results', function () {
 
 // --- Create & Edit (MedicalExperienceForm) ---
 
-test('user can create a medical experience via form', function () {
-    $this->actingAs(User::factory()->create());
+test('admin can create a medical experience via form', function () {
+    asAdmin();
 
     Livewire::test(MedicalExperienceForm::class)
         ->call('open')
         ->set('name', 'Neurology')
-        ->set('sort_order', 5)
+        ->set('sortOrder', 5)
         ->call('save')
         ->assertDispatched('medical-experience-saved');
 
@@ -73,8 +79,18 @@ test('user can create a medical experience via form', function () {
     ]);
 });
 
+test('non-admin cannot save a medical experience', function () {
+    asUser();
+
+    Livewire::test(MedicalExperienceForm::class)
+        ->call('open')
+        ->set('name', 'Neurology')
+        ->call('save')
+        ->assertForbidden();
+});
+
 test('form validates required name', function () {
-    $this->actingAs(User::factory()->create());
+    asAdmin();
 
     Livewire::test(MedicalExperienceForm::class)
         ->call('open')
@@ -84,7 +100,7 @@ test('form validates required name', function () {
 });
 
 test('form validates unique name on create', function () {
-    $this->actingAs(User::factory()->create());
+    asAdmin();
 
     MedicalExperience::factory()->create(['name' => 'Cardiology']);
 
@@ -95,14 +111,15 @@ test('form validates unique name on create', function () {
         ->assertHasErrors(['name' => 'unique']);
 });
 
-test('user can update a medical experience via form', function () {
-    $this->actingAs(User::factory()->create());
+test('admin can update a medical experience via form', function () {
+    asAdmin();
+
     $experience = MedicalExperience::factory()->create(['name' => 'Old Name', 'sort_order' => 1]);
 
     Livewire::test(MedicalExperienceForm::class)
         ->call('open', $experience->id)
         ->set('name', 'New Name')
-        ->set('sort_order', 10)
+        ->set('sortOrder', 10)
         ->call('save')
         ->assertDispatched('medical-experience-saved');
 
@@ -114,7 +131,7 @@ test('user can update a medical experience via form', function () {
 });
 
 test('form validates unique name ignoring current record on edit', function () {
-    $this->actingAs(User::factory()->create());
+    asAdmin();
 
     $experience = MedicalExperience::factory()->create(['name' => 'Cardiology']);
     MedicalExperience::factory()->create(['name' => 'Dermatology']);
@@ -127,13 +144,14 @@ test('form validates unique name ignoring current record on edit', function () {
 });
 
 test('form allows keeping the same name on edit', function () {
-    $this->actingAs(User::factory()->create());
+    asAdmin();
+
     $experience = MedicalExperience::factory()->create(['name' => 'Cardiology']);
 
     Livewire::test(MedicalExperienceForm::class)
         ->call('open', $experience->id)
         ->set('name', 'Cardiology')
-        ->set('sort_order', 99)
+        ->set('sortOrder', 99)
         ->call('save')
         ->assertHasNoErrors()
         ->assertDispatched('medical-experience-saved');
@@ -141,8 +159,9 @@ test('form allows keeping the same name on edit', function () {
 
 // --- Delete ---
 
-test('user can delete a medical experience', function () {
-    $this->actingAs(User::factory()->create());
+test('admin can delete a medical experience', function () {
+    asAdmin();
+
     $experience = MedicalExperience::factory()->create();
 
     Livewire::test(Index::class)
@@ -152,4 +171,15 @@ test('user can delete a medical experience', function () {
     $this->assertDatabaseMissing('medical_experiences', [
         'id' => $experience->id,
     ]);
+});
+
+test('non-admin cannot delete a medical experience', function () {
+    asUser();
+
+    $experience = MedicalExperience::factory()->create();
+
+    Livewire::test(Index::class)
+        ->call('confirmDelete', $experience->id)
+        ->call('delete')
+        ->assertForbidden();
 });

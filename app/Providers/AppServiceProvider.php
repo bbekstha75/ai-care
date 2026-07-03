@@ -2,9 +2,11 @@
 
 namespace App\Providers;
 
+use App\Enums\RoleEnum;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -24,6 +26,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+        $this->configureSuperAdmin();
     }
 
     /**
@@ -46,5 +49,16 @@ class AppServiceProvider extends ServiceProvider
                 ->uncompromised()
             : null,
         );
+    }
+
+    /**
+     * Grant all permissions to the Super Admin role via Gate::before.
+     * Must return null (not false) for other users to allow normal checks.
+     */
+    protected function configureSuperAdmin(): void
+    {
+        Gate::before(function ($user, string $ability): ?bool {
+            return $user->hasRole(RoleEnum::SuperAdmin->value) ? true : null;
+        });
     }
 }

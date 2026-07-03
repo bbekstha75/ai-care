@@ -11,9 +11,7 @@
         @endif
 
         <flux:table.rows>
-            @forelse ($slot->isEmpty() ? [] : [1] as $_)
-                {{ $slot }}
-            @empty
+            @if ($paginator && $paginator->isEmpty())
                 <flux:table.row>
                     <flux:table.cell colspan="100" class="text-center py-8">
                         @if (isset($empty))
@@ -26,7 +24,9 @@
                         @endif
                     </flux:table.cell>
                 </flux:table.row>
-            @endforelse
+            @else
+                {{ $slot }}
+            @endif
         </flux:table.rows>
     </flux:table>
 

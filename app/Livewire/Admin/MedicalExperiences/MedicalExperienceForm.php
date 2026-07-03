@@ -19,7 +19,7 @@ class MedicalExperienceForm extends Component
 
     public string $name = '';
 
-    public ?int $sort_order = null;
+    public ?int $sortOrder = null;
 
     /**
      * @return array<string, array<int, mixed>>
@@ -34,7 +34,7 @@ class MedicalExperienceForm extends Component
 
         return [
             'name' => ['required', 'string', 'max:255', $uniqueRule],
-            'sort_order' => ['nullable', 'integer', 'min:0'],
+            'sortOrder' => ['nullable', 'integer', 'min:0'],
         ];
     }
 
@@ -44,12 +44,19 @@ class MedicalExperienceForm extends Component
         $this->resetValidation();
 
         if ($id) {
-            $this->medicalExperience = MedicalExperience::findOrFail($id);
+            $this->medicalExperience = MedicalExperience::find($id);
+
+            if (! $this->medicalExperience) {
+                Flux::toast(text: __('Medical experience not found.'), variant: 'danger');
+
+                return;
+            }
+
             $this->name = $this->medicalExperience->name;
-            $this->sort_order = $this->medicalExperience->sort_order;
+            $this->sortOrder = $this->medicalExperience->sort_order;
             $this->isEditing = true;
         } else {
-            $this->reset('name', 'sort_order', 'medicalExperience');
+            $this->reset('name', 'sortOrder', 'medicalExperience');
             $this->isEditing = false;
         }
 
@@ -58,13 +65,20 @@ class MedicalExperienceForm extends Component
 
     public function save(): void
     {
+        $this->authorize($this->isEditing ? 'medical_experiences update' : 'medical_experiences store');
+
         $validated = $this->validate();
 
+        $data = [
+            'name' => $validated['name'],
+            'sort_order' => $validated['sortOrder'],
+        ];
+
         if ($this->isEditing && $this->medicalExperience) {
-            $this->medicalExperience->update($validated);
+            $this->medicalExperience->update($data);
             Flux::toast(text: __('Medical experience updated successfully.'), variant: 'success');
         } else {
-            MedicalExperience::create($validated);
+            MedicalExperience::create($data);
             Flux::toast(text: __('Medical experience created successfully.'), variant: 'success');
         }
 

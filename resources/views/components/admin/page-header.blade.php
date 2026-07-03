@@ -17,5 +17,3 @@
         </div>
     @endif
 </div>
-
-<flux:separator variant="subtle" class="mt-4" />
