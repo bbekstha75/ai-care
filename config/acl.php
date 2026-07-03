@@ -15,6 +15,7 @@ return [
         'diagnoses',
         'medical_experiences',
         'roles',
+        'settings',
     ],
 
     /*
