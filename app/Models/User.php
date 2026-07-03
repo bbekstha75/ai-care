@@ -6,7 +6,9 @@ namespace App\Models;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
@@ -16,9 +18,16 @@ use Laravel\Fortify\PasskeyAuthenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 
 /**
- * @property int $id
- * @property string $name
+ * @property string $id
+ * @property string $first_name
+ * @property string $last_name
  * @property string $email
+ * @property string $mobile
+ * @property string|null $medical_experience_id
+ * @property string|null $subscription_plan_id
+ * @property int $login_count
+ * @property Carbon|null $last_login_at
+ * @property bool $is_active
  * @property Carbon|null $email_verified_at
  * @property string $password
  * @property string|null $two_factor_secret
@@ -27,13 +36,14 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property string|null $remember_token
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property-read string $name
  */
-#[Fillable(['name', 'email', 'password'])]
+#[Fillable(['first_name', 'last_name', 'email', 'mobile', 'medical_experience_id', 'subscription_plan_id', 'login_count', 'last_login_at', 'is_active', 'password'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
+    use HasFactory, HasUuids, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
 
     /**
      * Get the attributes that should be cast.
@@ -44,8 +54,15 @@ class User extends Authenticatable implements PasskeyUser
     {
         return [
             'email_verified_at' => 'datetime',
+            'last_login_at' => 'datetime',
+            'is_active' => 'boolean',
             'password' => 'hashed',
         ];
+    }
+
+    public function getNameAttribute(): string
+    {
+        return trim("{$this->first_name} {$this->last_name}");
     }
 
     /**
@@ -58,5 +75,15 @@ class User extends Authenticatable implements PasskeyUser
         return Str::length($initials) > 1
             ? Str::substr($initials, 0, 1).Str::substr($initials, -1)
             : $initials;
+    }
+
+    public function subscriptionPlan(): BelongsTo
+    {
+        return $this->belongsTo(SubscriptionPlan::class);
+    }
+
+    public function medicalExperience(): BelongsTo
+    {
+        return $this->belongsTo(MedicalExperience::class);
     }
 }

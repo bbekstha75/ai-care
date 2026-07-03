@@ -11,16 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('passkeys', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+        Schema::create('medical_experiences', function (Blueprint $table) {
+            $table->uuid('id')->primary();
             $table->string('name');
-            $table->string('credential_id')->unique();
-            $table->json('credential');
-            $table->timestamp('last_used_at')->nullable();
+            $table->integer('sort_order')->nullable();
             $table->timestamps();
-
-            $table->index('user_id');
         });
     }
 
@@ -29,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('passkeys');
+        Schema::dropIfExists('medical_experiences');
     }
 };

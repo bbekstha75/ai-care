@@ -16,6 +16,12 @@
                         {{ __('Dashboard') }}
                     </flux:sidebar.item>
                 </flux:sidebar.group>
+
+                <flux:sidebar.group :heading="__('Admin')" class="grid">
+                    <flux:sidebar.item icon="academic-cap" :href="route('admin.medical-experiences.index')" :current="request()->routeIs('admin.medical-experiences.*')" wire:navigate>
+                        {{ __('Medical Experiences') }}
+                    </flux:sidebar.item>
+                </flux:sidebar.group>
             </flux:sidebar.nav>
 
             <flux:spacer />
