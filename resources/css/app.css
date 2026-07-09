@@ -24,9 +24,13 @@
     --color-zinc-900: #171717;
     --color-zinc-950: #0a0a0a;
 
+    --color-primary:#161E64;
+    --color-custom-sky:#1e88e5;
+
     --color-accent: var(--color-neutral-800);
     --color-accent-content: var(--color-neutral-800);
     --color-accent-foreground: var(--color-white);
+
 }
 
 @layer theme {

@@ -15,6 +15,15 @@
                     <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
                         {{ __('Dashboard') }}
                     </flux:sidebar.item>
+                    <flux:sidebar.item icon="document-text" :href="route('case-notes.index')" :current="request()->routeIs('case-notes.*')" wire:navigate>
+                        {{ __('Case Notes') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="microphone" :href="route('transcriptions.index')" :current="request()->routeIs('transcriptions.*')" wire:navigate>
+                        {{ __('Transcriptions') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="sparkles" :href="route('ai-care.index')" :current="request()->routeIs('ai-care.*')" wire:navigate>
+                        {{ __('AI Care') }}
+                    </flux:sidebar.item>
                 </flux:sidebar.group>
 
                 <flux:sidebar.group :heading="__('Admin')" class="grid">

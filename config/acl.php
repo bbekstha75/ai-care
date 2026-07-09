@@ -17,6 +17,7 @@ return [
         'roles',
         'settings',
         'case_templates',
+        'case_notes',
     ],
 
     /*
