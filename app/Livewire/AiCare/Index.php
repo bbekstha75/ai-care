@@ -2,10 +2,15 @@
 
 namespace App\Livewire\AiCare;
 
+use App\Ai\Actions\GenerateClinicalNote;
 use App\Models\CaseNote;
 use App\Models\CaseTemplate;
+use App\Models\PromptTemplate;
 use Illuminate\Contracts\View\View;
+use Laravel\Ai\Streaming\Events\TextDelta;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 #[Layout('layouts.app')]
@@ -25,21 +30,11 @@ class Index extends Component
 
     public string $mainInput = '';
 
-    public string $caseOneResult = '';
-
-    public string $caseTwoResult = '';
-
-    public ?string $caseOneFeedback = null;
-
-    public ?string $caseTwoFeedback = null;
-
-    public string $caseOneComment = '';
-
-    public string $caseTwoComment = '';
-
-    public bool $isGenerating = false;
-
-    public bool $isGeneratingSecond = false;
+    // Consolidated case state
+    public array $cases = [
+        1 => ['result' => '', 'feedback' => null, 'comment' => '', 'isGenerating' => false],
+        2 => ['result' => '', 'feedback' => null, 'comment' => '', 'isGenerating' => false],
+    ];
 
     public function startConsultation(): void
     {
@@ -49,57 +44,52 @@ class Index extends Component
 
     public function resetForm(): void
     {
-        $this->reset([
-            'tagHistory',
-            'patientSummary',
-            'speakerDiarization',
-            'clinicalStyle',
-            'selectedTemplate',
-            'selectedTranscription',
-            'mainInput',
-            'caseOneResult',
-            'caseTwoResult',
-            'caseOneFeedback',
-            'caseTwoFeedback',
-            'caseOneComment',
-            'caseTwoComment',
-        ]);
-
+        $this->reset(); // Resets all public properties to their initial state
         \Flux::toast(__('Form reset successfully.'));
     }
 
-    public function generateCase(): void
+    public function generateCase(int $caseNumber, GenerateClinicalNote $action): void
     {
-        if (blank($this->mainInput)) {
-            \Flux::toast(__('Please enter patient summary or clinical text first.'), variant: 'danger');
+        if (!$this->validatePrerequisites()) {
+            return;
+        }
+
+        $template = PromptTemplate::find($this->clinicalStyle);
+
+        if (!$template) {
+            \Flux::toast(__('Selected clinical style not found.'), variant: 'danger');
 
             return;
         }
 
-        $this->isGenerating = true;
+        $this->cases[$caseNumber]['isGenerating'] = true;
 
-        // TODO: call AI service for case generation
-        $this->caseOneResult = '';
-        $this->isGenerating = false;
+        $data = [
+            'input' => $this->mainInput,
+            'patient_summary' => $this->patientSummary,
+            'tag_history' => $this->tagHistory,
+            'case_number' => $caseNumber,
+        ];
 
-        \Flux::toast(__('Case generation started...'));
-    }
+        try {
+            $stream = $action->execute($template, $data);
+            $streamTarget = "cases.{$caseNumber}.result";
 
-    public function generateSecondCase(): void
-    {
-        if (blank($this->mainInput)) {
-            \Flux::toast(__('Please enter patient summary or clinical text first.'), variant: 'danger');
+            foreach ($stream as $event) {
+                if ($event instanceof TextDelta) {
+                    $this->cases[$caseNumber]['result'] .= $event->delta;
 
-            return;
+                    $this->stream(
+                        content: $event->delta,
+                        to: $streamTarget,
+                    );
+                }
+            }
+        } catch (\Exception $e) {
+            \Flux::toast(__('Error during generation: ') . $e->getMessage(), variant: 'danger');
         }
 
-        $this->isGeneratingSecond = true;
-
-        // TODO: call AI service for second case generation
-        $this->caseTwoResult = '';
-        $this->isGeneratingSecond = false;
-
-        \Flux::toast(__('Second case generation started...'));
+        $this->cases[$caseNumber]['isGenerating'] = false;
     }
 
     public function saveScribe(): void
@@ -112,7 +102,7 @@ class Index extends Component
 
         CaseNote::create([
             'user_id' => auth()->id(),
-            'title' => 'Scribe — '.now()->format('d M Y H:i'),
+            'title' => 'Scribe — ' . now()->format('d M Y H:i'),
             'input' => $this->mainInput,
             'output' => null,
         ]);
@@ -120,12 +110,18 @@ class Index extends Component
         \Flux::toast(__('Scribe saved successfully.'));
     }
 
+    #[On('transcription-complete')]
+    public function transcriptionCompleted($data): void
+    {
+        $this->mainInput = $data['transcript'];
+    }
+
     public function saveVisitCasenote(int $caseNumber): void
     {
-        $output = $caseNumber === 1 ? $this->caseOneResult : $this->caseTwoResult;
+        $output = $this->cases[$caseNumber]['result'] ?? null;
 
         if (blank($output)) {
-            \Flux::toast(__('No result to save.'), variant: 'danger');
+            \Flux::toast(__('No result to save for Case ') . $caseNumber . '.', variant: 'danger');
 
             return;
         }
@@ -141,24 +137,19 @@ class Index extends Component
 
     public function copyToClipboard(int $caseNumber): void
     {
-        $this->dispatch('copy-to-clipboard', text: $caseNumber === 1 ? $this->caseOneResult : $this->caseTwoResult);
+        $this->dispatch('copy-to-clipboard', text: $this->cases[$caseNumber]['result']);
     }
 
     public function submitFeedback(int $caseNumber, ?string $vote): void
     {
-        if ($caseNumber === 1) {
-            $this->caseOneFeedback = $vote;
-        } else {
-            $this->caseTwoFeedback = $vote;
-        }
+        $this->cases[$caseNumber]['feedback'] = $vote;
     }
 
     public function saveFeedbackComment(int $caseNumber): void
     {
-        $feedback = $caseNumber === 1 ? $this->caseOneFeedback : $this->caseTwoFeedback;
-        $comment = $caseNumber === 1 ? $this->caseOneComment : $this->caseTwoComment;
+        $case = $this->cases[$caseNumber];
 
-        if (blank($feedback)) {
+        if (blank($case['feedback'])) {
             \Flux::toast(__('Please select a feedback option first.'), variant: 'danger');
 
             return;
@@ -166,30 +157,51 @@ class Index extends Component
 
         // TODO: persist feedback to a model/table
 
-        if ($caseNumber === 1) {
-            $this->caseOneComment = '';
-        } else {
-            $this->caseTwoComment = '';
-        }
-
+        $this->cases[$caseNumber]['comment'] = ''; // Clear just the comment
         \Flux::toast(__('Feedback saved. Thank you!'));
     }
 
-    /** @return array<int, array{value: string, label: string}> */
-    public function getTemplateOptions(): array
+    private function validatePrerequisites(): bool
+    {
+        if (blank($this->mainInput)) {
+            \Flux::toast(__('Please enter patient summary or clinical text first.'), variant: 'danger');
+
+            return false;
+        }
+
+        if (blank($this->clinicalStyle)) {
+            \Flux::toast(__('Please select a clinical style (prompt) first.'), variant: 'danger');
+
+            return false;
+        }
+
+        return true;
+    }
+
+    #[Computed]
+    public function templateOptions(): array
     {
         return CaseTemplate::query()
             ->where('is_active', true)
             ->pluck('name', 'id')
-            ->map(fn (string $name, string $id) => ['value' => $id, 'label' => $name])
+            ->map(fn(string $name, string $id) => ['value' => $id, 'label' => $name])
+            ->values()
+            ->toArray();
+    }
+
+    #[Computed]
+    public function styleOptions(): array
+    {
+        return PromptTemplate::query()
+            ->where('status', true)
+            ->pluck('title', 'id')
+            ->map(fn(string $name, string $id) => ['value' => $id, 'label' => $name])
             ->values()
             ->toArray();
     }
 
     public function render(): View
     {
-        return view('livewire.ai-care.index', [
-            'templateOptions' => $this->getTemplateOptions(),
-        ]);
+        return view('livewire.ai-care.index');
     }
 }

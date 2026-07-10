@@ -18,6 +18,7 @@ return [
         'settings',
         'case_templates',
         'case_notes',
+        'prompt_templates',
     ],
 
     /*

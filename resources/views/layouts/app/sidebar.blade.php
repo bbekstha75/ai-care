@@ -41,6 +41,11 @@
                             {{ __('Case Templates') }}
                         </flux:sidebar.item>
                     @endcan
+                    @can('prompt_templates list')
+                        <flux:sidebar.item icon="command-line" :href="route('admin.prompt-templates.index')" :current="request()->routeIs('admin.prompt-templates.*')" wire:navigate>
+                            {{ __('Prompt Templates') }}
+                        </flux:sidebar.item>
+                    @endcan
                     @can('settings list')
                         <flux:sidebar.item icon="cog-6-tooth" :href="route('admin.settings.index')" :current="request()->routeIs('admin.settings.*')" wire:navigate>
                             {{ __('Settings') }}
