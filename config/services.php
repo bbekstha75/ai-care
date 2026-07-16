@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'assemblyai' => [
+        'key' => env('ASSEMBLYAI_API_KEY'),
+    ],
+
 ];

@@ -111,9 +111,9 @@ class Index extends Component
     }
 
     #[On('transcription-complete')]
-    public function transcriptionCompleted($data): void
+    public function transcriptionCompleted(string $transcript): void
     {
-        $this->mainInput = $data['transcript'];
+        $this->mainInput = $transcript;
     }
 
     public function saveVisitCasenote(int $caseNumber): void

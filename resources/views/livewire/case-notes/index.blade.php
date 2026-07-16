@@ -8,11 +8,11 @@
         :heading="__('Case Notes')"
         :subheading="__('Manage your clinical case notes')"
     >
-        <x-slot:actions>
-            <flux:button variant="primary" icon="plus" wire:click="$dispatch('open-case-note-form')">
-                {{ __('Create New') }}
-            </flux:button>
-        </x-slot:actions>
+{{--        <x-slot:actions>--}}
+{{--            <flux:button variant="primary" icon="plus" wire:click="$dispatch('open-case-note-form')">--}}
+{{--                {{ __('Create New') }}--}}
+{{--            </flux:button>--}}
+{{--        </x-slot:actions>--}}
     </x-admin.page-header>
 
     <flux:card class="!p-0">
@@ -108,7 +108,7 @@
 
     <livewire:case-notes.case-note-form />
     <livewire:case-notes.case-note-detail-modal />
-    
+
     <x-admin.delete-modal
         name="delete-confirmation"
         :title="__('Delete Case Note')"

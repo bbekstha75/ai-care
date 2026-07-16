@@ -69,7 +69,7 @@
     </flux:card>
 
     <livewire:admin.case-templates.case-template-form />
-    
+
     <x-admin.delete-modal
         name="delete-confirmation"
         :title="__('Delete Case Template')"
